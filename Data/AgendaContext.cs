@@ -13,7 +13,14 @@ namespace Data
 
         public virtual DbSet<Contacto> Contactos { get; set; }
         public virtual DbSet<ContactoTelefono> ContactoTelefonos { get; set; }
-        public virtual DbSet<ContactoCorreoElectronico> ContactoCorreosElectornico { get; set; }
+        public virtual DbSet<ContactoCorreoElectronico> ContactoCorreosElectronico { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<Contacto>()
+                .HasIndex(c => c.Cedula)
+                .IsUnique(true);
+
+        }
     }
 }

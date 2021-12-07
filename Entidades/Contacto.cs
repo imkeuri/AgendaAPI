@@ -16,10 +16,13 @@ namespace Entidades
         [MaxLength(100)]
         public string Nombre { get; set; }
 
+        [Required]
         [MaxLength(100)]
         public string Apellido { get; set; }
 
-        public int MyProperty { get; set; }
+        [MaxLength(100)]
+        public string Direccion { get; set; }
+
 
     }
 }

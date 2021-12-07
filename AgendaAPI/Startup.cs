@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Negocio;
+using Negocio.Contratos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,10 +37,12 @@ namespace AgendaAPI
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "AgendaAPI", Version = "v1" });
             });
 
-            services.AddDbContext<AgendaContext>( options =>
-            {
-                options.UseSqlServer(Configuration.GetConnectionString("AgendaConnectionDevelopment"));
-            });
+            services.AddDbContext<AgendaContext>(options =>
+           {
+               options.UseSqlServer(Configuration.GetConnectionString("AgendaConnectionDevelopment"));
+           });
+
+            ConfigureBusinessLogic(services);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -61,6 +65,11 @@ namespace AgendaAPI
             {
                 endpoints.MapControllers();
             });
+        }
+
+        public void ConfigureBusinessLogic(IServiceCollection services)
+        {
+            services.AddScoped<IAgendaBL, AgendaBL>();
         }
     }
 }

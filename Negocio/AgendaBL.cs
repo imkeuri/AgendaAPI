@@ -3,8 +3,10 @@ using DTOs;
 using Entidades;
 using Microsoft.EntityFrameworkCore;
 using Negocio.Contratos;
+using Negocio.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,9 +21,12 @@ namespace Negocio
         {
             _agendaContext = agendaContext;
         }
+
+
+
         public async Task CrearContacto(ContactoDTO contacto)
         {
-            var transaccion = _agendaContext.Database.BeginTransaction();
+            var transaccion = await _agendaContext.Database.BeginTransactionAsync();
 
             try
             {
@@ -31,58 +36,235 @@ namespace Negocio
                     Nombre = contacto.Nombre,
                     Apellido = contacto.Apellido,
                     Cedula = contacto.Cedula,
+                    Direccion = contacto.Direccion
                 };
 
                 await _agendaContext.Contactos.AddAsync(obj_contacto);
 
-                contacto.CorreoElectronicos.ForEach(async contacto =>
+                if (contacto.CorreoElectronicos != null)
                 {
-                    contacto.Contacto = obj_contacto;
-                    await _agendaContext.ContactoCorreosElectornico.AddAsync(contacto);
+                    contacto.CorreoElectronicos.ForEach(async contacto =>
+                    {
+                        contacto.Contacto = obj_contacto;
+                        await _agendaContext.ContactoCorreosElectronico.AddAsync(contacto);
 
-                });
+                    });
+                }
 
-                contacto.Telefonos.ForEach(async telefono =>
+                if (contacto.Telefonos != null)
                 {
-                    telefono.Contacto = obj_contacto;
-                    await _agendaContext.ContactoTelefonos.AddAsync(telefono);
+                    contacto.Telefonos.ForEach(async telefono =>
+                    {
+                        telefono.Contacto = obj_contacto;
+                        await _agendaContext.ContactoTelefonos.AddAsync(telefono);
 
-                });
-
+                    });
+                }
                 await _agendaContext.SaveChangesAsync();
                 await transaccion.CommitAsync();
+
+            }
+            catch (ConstraintException)
+            {
+                await transaccion.RollbackAsync();
+                throw new ServiceException("No puede insertar duplicados");
 
             }
             catch (ArgumentNullException)
             {
                 await transaccion.RollbackAsync();
-                throw new ArgumentNullException("Hay un problema con algunos de los datos digitados");
+                throw new ServiceException("Hubo un problema con algunos de los campos");
             }
             catch (Exception)
             {
                 await transaccion.RollbackAsync();
-
-                throw new Exception("Hubo un error");
+                throw new ServiceException("Hubo un  problema al procesar la solicitud");
             }
 
         }
 
+        public async Task ActualizarContacto(ContactoDTO contacto)
+        {
+            var transaccion = await _agendaContext.Database.BeginTransactionAsync();
+
+            try
+            {
+                var obj_contacto = await _agendaContext.Contactos.Where(c => c.Id == contacto.Id).FirstOrDefaultAsync();
+
+                if (obj_contacto == null)
+                    throw new UnvalidArgumentException("Algunos de los telefono no existen");
+
+
+
+                obj_contacto.Cedula = contacto.Cedula;
+                obj_contacto.Nombre = contacto.Nombre;
+                obj_contacto.Apellido = contacto.Apellido;
+                obj_contacto.Direccion = contacto.Direccion;
+
+
+
+                _agendaContext.Contactos.Update(obj_contacto);
+
+                if (contacto.CorreoElectronicos != null)
+                {
+                    contacto.CorreoElectronicos.ForEach(correo =>
+                   {
+                       if (!_agendaContext.ContactoCorreosElectronico.Any(c => c.Id == correo.Id))
+                           throw new UnvalidArgumentException("Algunos de los correos no existen");
+
+
+                       _agendaContext.ContactoCorreosElectronico.Update(correo);
+
+                   });
+                }
+
+                if (contacto.Telefonos != null)
+                {
+                    contacto.Telefonos.ForEach(telefono =>
+                    {
+                        if (!_agendaContext.ContactoTelefonos.Any(t => t.Id == telefono.Id))
+                            throw new UnvalidArgumentException("Algunos de los telefono no existen");
+
+
+                        telefono.Contacto = obj_contacto;
+                        _agendaContext.ContactoTelefonos.Update(telefono);
+
+                    });
+                }
+                await _agendaContext.SaveChangesAsync();
+                await transaccion.CommitAsync();
+
+            }
+            catch (UnvalidArgumentException)
+            {
+                await transaccion.RollbackAsync();
+                throw new ServiceException("Algunos de los datos ingresados no existen, no hubo cambios");
+            }
+            catch (ConstraintException)
+            {
+                await transaccion.RollbackAsync();
+                throw new ServiceException("No puede insertar duplicados, no hubo cambios");
+
+            }
+            catch (ArgumentNullException)
+            {
+                await transaccion.RollbackAsync();
+                throw new ServiceException("Hubo un problema con algunos de los campos, no hubo cambios");
+            }
+            catch (Exception)
+            {
+                await transaccion.RollbackAsync();
+                throw new ServiceException("Hubo un  problema al procesar la solicitud, no hubo cambios");
+            }
+        }
+
+
         public async Task<List<ContactoDTO>> GetListaContactos()
         {
-            List<ContactoDTO> lst_rows = await (from c in _agendaContext.Contactos
-                                                select new ContactoDTO
-                                                {
-                                                    Nombre = c.Nombre,
-                                                    Apellido = c.Apellido,
-                                                    Cedula = c.Cedula,
-                                                    Telefonos = (_agendaContext.ContactoTelefonos.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoTelefono
-                                                    { NumeroTelefono = ct.NumeroTelefono })).ToList(),
-                                                    CorreoElectronicos = (_agendaContext.ContactoCorreosElectornico.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoCorreoElectronico
-                                                    { Correo = ct.Correo })).ToList()
+            try
+            {
 
-                                                }).ToListAsync();
+                List<ContactoDTO> lst_rows = await (from c in _agendaContext.Contactos
+                                                    select new ContactoDTO
+                                                    {
+                                                        Id = c.Id,
+                                                        Nombre = c.Nombre,
+                                                        Apellido = c.Apellido,
+                                                        Cedula = c.Cedula,
+                                                        Direccion = c.Direccion,
+                                                        Telefonos = (_agendaContext.ContactoTelefonos.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoTelefono
+                                                        { NumeroTelefono = ct.NumeroTelefono })).ToList(),
+                                                        CorreoElectronicos = (_agendaContext.ContactoCorreosElectronico.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoCorreoElectronico
+                                                        { Correo = ct.Correo })).ToList()
 
-            return lst_rows;
+                                                    }).ToListAsync();
+
+                return lst_rows;
+            }
+            catch (Exception)
+            {
+
+                throw new ServiceException("Al parecer el servicio no se encuentra disponible");
+            }
+        }
+
+        public async Task<ContactoDTO> GetContacto(int id)
+        {
+            try
+            {
+                ContactoDTO obj_contacto = await (from c in _agendaContext.Contactos
+                                                  select new ContactoDTO
+                                                  {
+                                                      Id = c.Id,
+                                                      Nombre = c.Nombre,
+                                                      Apellido = c.Apellido,
+                                                      Cedula = c.Cedula,
+                                                      Direccion = c.Direccion,
+                                                      Telefonos = (_agendaContext.ContactoTelefonos.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoTelefono
+                                                      {
+                                                          Id = ct.Id,
+                                                          NumeroTelefono = ct.NumeroTelefono
+                                                      })).ToList(),
+                                                      CorreoElectronicos = (_agendaContext.ContactoCorreosElectronico.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoCorreoElectronico
+                                                      {
+                                                          Id = ct.Id,
+                                                          Correo = ct.Correo
+                                                      })).ToList()
+
+                                                  }).Where(c => c.Id == id).FirstOrDefaultAsync();
+
+
+                return obj_contacto;
+            }
+            catch (Exception)
+            {
+
+                throw new ServiceException("Al parecer el servicio no se encuentra disponible");
+            }
+        }
+
+        public async Task DeleteContacto(int id)
+        {
+            var transaccion = await _agendaContext.Database.BeginTransactionAsync();
+
+            Contacto obj_contacto = await (_agendaContext.Contactos.Where(x => x.Id == id).FirstOrDefaultAsync());
+
+            try
+            {
+                if (obj_contacto == null)
+                    throw new UnvalidArgumentException("No es posible eliminar un contacto no existente");
+
+
+                await _agendaContext.ContactoTelefonos.Where(ct => ct.Id_Contacto == id).ForEachAsync(ct =>
+                {
+                    _agendaContext.ContactoTelefonos.Remove(ct);
+
+                });
+
+                await _agendaContext.ContactoCorreosElectronico.Where(cc => cc.Id_Contacto == id).ForEachAsync(cc =>
+                {
+                    _agendaContext.ContactoCorreosElectronico.Remove(cc);
+
+                });
+
+                _agendaContext.Contactos.Remove(obj_contacto);
+
+                await _agendaContext.SaveChangesAsync();
+                await transaccion.CommitAsync();
+
+
+            }
+            catch (UnvalidArgumentException ex)
+            {
+                await transaccion.RollbackAsync();
+                throw new ServiceException(ex.Message);
+            }
+            catch (Exception)
+            {
+                await transaccion.RollbackAsync();
+                throw new ServiceException("No fue posible procesar la solicitud");
+            }
+
         }
     }
 }
