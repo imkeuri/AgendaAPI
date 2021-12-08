@@ -138,6 +138,7 @@ namespace AgendaFrontEnd.Pages.Contactos
                 {
                     await Js.InvokeVoidAsync("CustomSucess", $"Contacto {contacto.Nombre} {contacto.Apellido} actualizado correctamente");
                     await OnInitializedAsync();
+                    _isEditing = false;
                 }
                 else
                 {
