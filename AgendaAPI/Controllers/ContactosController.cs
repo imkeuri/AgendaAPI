@@ -37,7 +37,7 @@ namespace AgendaAPI.Controllers
 
 
         [HttpGet("GetContacto/{id}")]
-        public async Task<ActionResult<ContactoDTO>> GetContactos(int id)
+        public async Task<ActionResult<ContactoDTO>> GetContacto(int id)
         {
             try
             {
@@ -46,7 +46,7 @@ namespace AgendaAPI.Controllers
             }
             catch (ServiceException ex)
             {
-                return Ok(new { Status = -1, contactos = new ContactoDTO(), ex.Message }); ;
+                return Ok(new { Status = -1, contacto = new ContactoDTO(), ex.Message }); ;
             }
 
         }
@@ -67,7 +67,7 @@ namespace AgendaAPI.Controllers
         }
 
 
-        [HttpPut("UpdateContacto")]
+        [HttpPut("UpdateContacto/{id}")]
         public async Task<IActionResult> PutContacto([FromBody] ContactoDTO contacto, int? id)
         {
             if (!id.HasValue)
@@ -87,7 +87,7 @@ namespace AgendaAPI.Controllers
             }
         }
 
-        [HttpDelete("DeleteContacto")]
+        [HttpDelete("DeleteContacto/{id}")]
         public async Task<IActionResult> DeleteContacto(int id)
         {
             try

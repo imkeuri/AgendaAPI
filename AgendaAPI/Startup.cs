@@ -40,6 +40,7 @@ namespace AgendaAPI
             services.AddDbContext<AgendaContext>(options =>
            {
                options.UseSqlServer(Configuration.GetConnectionString("AgendaConnectionDevelopment"));
+
            });
 
             ConfigureBusinessLogic(services);

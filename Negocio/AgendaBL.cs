@@ -117,36 +117,42 @@ namespace Negocio
 
                 if (contacto.CorreoElectronicos != null)
                 {
-                    contacto.CorreoElectronicos.ForEach(async correo =>
-                   {
-                       ContactoCorreoElectronico contactoCorreo = await _agendaContext.ContactoCorreosElectronico.
-                       Where(c => c.Id == correo.Id).FirstOrDefaultAsync();
 
-                       if (contactoCorreo == null)
-                           throw new UnvalidArgumentException("Algunos de los correos no existen");
+                    contacto.CorreoElectronicos.ForEach(correo =>
+                  {
+                      ContactoCorreoElectronico contactoCorreo = _agendaContext.ContactoCorreosElectronico.
+                      Where(c => c.Id == correo.Id).FirstOrDefault();
 
-                       contactoCorreo.Correo = correo.CorreoElectronico;
+                      if (contactoCorreo == null)
+                          throw new UnvalidArgumentException("Algunos de los correos no existen");
 
-                       _agendaContext.ContactoCorreosElectronico.Update(contactoCorreo);
+                      contactoCorreo.Correo = correo.CorreoElectronico;
 
-                   });
+                      _agendaContext.ContactoCorreosElectronico.Update(contactoCorreo);
+
+
+                  });
+
                 }
 
                 if (contacto.Telefonos != null)
                 {
-                    contacto.Telefonos.ForEach(async telefono =>
-                    {
-                        ContactoTelefono contactoTelefono = await _agendaContext.ContactoTelefonos.
-                       Where(c => c.Id == telefono.Id).FirstOrDefaultAsync();
+                    contacto.Telefonos.ForEach(telefono =>
+                   {
+                       ContactoTelefono contactoTelefono = _agendaContext.ContactoTelefonos.
+                      Where(c => c.Id == telefono.Id).FirstOrDefault();
 
-                        if (contactoTelefono == null)
-                            throw new UnvalidArgumentException("Algunos de los correos no existen");
+                       if (contactoTelefono == null)
+                           throw new UnvalidArgumentException("Algunos de los correos no existen");
 
-                        contactoTelefono.NumeroTelefono = telefono.Telefono;
+                       contactoTelefono.NumeroTelefono = telefono.Telefono;
 
-                        _agendaContext.ContactoTelefonos.Update(contactoTelefono);
+                       _agendaContext.ContactoTelefonos.Update(contactoTelefono);
 
-                    });
+
+                   });
+
+
                 }
                 await _agendaContext.SaveChangesAsync();
                 await transaccion.CommitAsync();

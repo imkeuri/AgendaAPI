@@ -1,0 +1,151 @@
+﻿@page "/"
+
+@page "/contactos"
+
+@inherits ComponentBaseContactos
+
+
+<div class="container">
+
+
+    <div class="row">
+
+        <div class="col-12 materialContainer">
+            <div class="col-12" style="background:rgba(31, 66, 180, 0.664); height:90px; padding-bottom:40px;  border-top-left-radius: 14px;
+    border-top-right-radius: 14px;">
+                <h2 class="title_formHeader p-3 " style="color:white;">Crear Contactos</h2>
+            </div>
+            <EditForm Model="contacto" class="form row" OnValidSubmit="SaveContactos">
+                <div class="form-group col-sm-12 col-md-4">
+                    <label>Cedula</label>
+                    <InputText class="form-control inputs" placeholder="00000000000" @bind-Value="@contacto.Cedula"></InputText>
+                </div>
+                <div class="form-group col-sm-12 col-md-4">
+                    <label>Nombre</label>
+                    <InputText class="form-control inputs" placeholder="Jhon" @bind-Value="@contacto.Nombre"></InputText>
+                </div>
+                <div class="form-group col-sm-12 col-md-4">
+                    <label>Apellido</label>
+                    <InputText class="form-control inputs" placeholder="Smith" @bind-Value="@contacto.Apellido"></InputText>
+                </div>
+                <div class="form-group col-sm-12">
+                    <label>Direccion</label>
+                    <InputText class="form-control inputs" placeholder="Ex. Calle Mexico" @bind-Value="@contacto.Direccion"></InputText>
+                </div>
+                <div class="form-group col-sm-12 ">
+                    <div class="label_w_option">
+                        <label>Telefonos</label>
+                        <div class="control-bt">
+                            <buttons class="btn add-btn" @onclick="AddTelefono"><i class="bi bi-plus"></i></buttons>
+                            <buttons class="btn remove-btn" @onclick="RemoveTelefono"><i class="bi bi-trash"></i></buttons>
+                        </div>
+
+                    </div>
+                    @foreach (var item in contacto.Telefonos)
+                    {
+                        <InputText class="form-control inputs multi-input" @bind-Value="@item.Telefono" placeholder="@("Telefono #"+(contacto.Telefonos.IndexOf(item)+1))"></InputText>
+
+                    }
+                </div>
+                <div class="form-group col-sm-12">
+                    <div class="label_w_option">
+                        <label>Correos</label>
+
+                        <div class="control-bt">
+                            <buttons class="btn  add-btn" @onclick="AddCorreo"><i class="bi bi-plus"></i></buttons>
+                            <buttons class="btn remove-btn" @onclick="RemoveCorreo"><i class="bi bi-trash"></i></buttons>
+                        </div>
+                    </div>
+                    @foreach (var item in contacto.CorreoElectronicos)
+                    {
+                        <div class="multi-inputs">
+
+                            <InputText class="form-control inputs multi-input" @bind-Value="@item.CorreoElectronico" placeholder="@("Correo #"+(contacto.CorreoElectronicos.IndexOf(item)+1))"></InputText>
+                        </div>
+                    }
+                </div>
+
+                <div class="btn-actions col-12">
+                    <button type="submit" Class="btn btn-submit  col-12 ">@(IsEditing()?"Actualizar":"Agregar")</button>
+                </div>
+
+                <div class="btn-actions col-12 mt-2">
+                    <button type="@(IsEditing()?"button":"reset")" Class="btn btn-delete  col-12 " @onclick="()=>CancelEditing()">@(IsEditing()?"Cancelar":"Resetear formulario")</button>
+                </div>
+
+            </EditForm>
+
+        </div>
+        <section class="col-12 container materialContainer  mb-4">
+            <div class="row">
+                <div class="col-12" id="tableEstados">
+                    <div class="col-12 ">
+                        <div class="col-12" style="background:rgba(31, 66, 180, 0.664); height:50px; padding-bottom:40px;">
+                            <h2 class="title_formHeader p-2" style="color:white;">Contactos</h2>
+                        </div>
+                        <table class="table_minimalist">
+                            <thead>
+                                <tr class="table-header">
+                                    <th class="header__item">
+                                        Cedula
+                                    </th>
+                                    <th class="header__item">
+                                        Nombre
+                                    </th>
+                                    <th class="header__item">
+                                        Apellido
+                                    </th>
+                                    <th class="header__item">
+                                        Telefono #1
+                                    </th>
+                                    <th class="header__item">
+                                        Correo #2
+                                    </th>
+                                    <th class="header__item">
+                                        Acciones
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (response_rows != null)
+                                {
+                                    @if (response_rows.contactos.Count != 0)
+                                    {
+                                        @foreach (var item in response_rows.contactos)
+                                        {
+                                            <tr class="table-row">
+                                                <td class="table-row">@item.cedula</td>
+                                                <td class="table-row">@item.nombre</td>
+                                                <td class="table-row">@item.apellido</td>
+                                                <td class="table-row">@(item.telefonos.First==null?"None":item.telefonos.First.telefono)</td>
+                                                <td class="table-row">@(item.correoElectronicos.First==null?"None":item.correoElectronicos.First.correoElectronico)</td>
+                                                <td class="table-row btn-action-table">
+                                                    <button @onclick="async ()=> await LoadContacto((int) item.id)" disabled="@IsEditing()"><i class="bi bi-pencil"></i></button>
+                                                    <button @onclick="async ()=> await DeleteContacto(item)" disable="@IsEditing()"><i class="bi bi-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                }
+
+                            </tbody>
+
+                        </table>
+                    </div>
+                    @if (response_rows == null)
+                    {
+
+                        <div class=" col-12 table_info" id="table_info_result">
+                            <h3 class="title_table_info">Aqui apareceran los contactos.</h3>
+                        </div>
+
+                    }
+
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+</div>
+
