@@ -43,10 +43,15 @@ namespace Negocio
 
                 if (contacto.CorreoElectronicos != null)
                 {
-                    contacto.CorreoElectronicos.ForEach(async contacto =>
+                    contacto.CorreoElectronicos.ForEach(async correo =>
                     {
-                        contacto.Contacto = obj_contacto;
-                        await _agendaContext.ContactoCorreosElectronico.AddAsync(contacto);
+                        ContactoCorreoElectronico contactoCorreoElectronico = new();
+
+                        contactoCorreoElectronico.Contacto = obj_contacto;
+                        contactoCorreoElectronico.Correo = correo.CorreoElectronico;
+
+
+                        await _agendaContext.ContactoCorreosElectronico.AddAsync(contactoCorreoElectronico);
 
                     });
                 }
@@ -55,8 +60,13 @@ namespace Negocio
                 {
                     contacto.Telefonos.ForEach(async telefono =>
                     {
-                        telefono.Contacto = obj_contacto;
-                        await _agendaContext.ContactoTelefonos.AddAsync(telefono);
+                        ContactoTelefono contactoTelefono = new();
+
+                        contactoTelefono.Contacto = obj_contacto;
+                        contactoTelefono.NumeroTelefono = telefono.Telefono;
+
+
+                        await _agendaContext.ContactoTelefonos.AddAsync(contactoTelefono);
 
                     });
                 }
@@ -107,27 +117,34 @@ namespace Negocio
 
                 if (contacto.CorreoElectronicos != null)
                 {
-                    contacto.CorreoElectronicos.ForEach(correo =>
+                    contacto.CorreoElectronicos.ForEach(async correo =>
                    {
-                       if (!_agendaContext.ContactoCorreosElectronico.Any(c => c.Id == correo.Id))
+                       ContactoCorreoElectronico contactoCorreo = await _agendaContext.ContactoCorreosElectronico.
+                       Where(c => c.Id == correo.Id).FirstOrDefaultAsync();
+
+                       if (contactoCorreo == null)
                            throw new UnvalidArgumentException("Algunos de los correos no existen");
 
+                       contactoCorreo.Correo = correo.CorreoElectronico;
 
-                       _agendaContext.ContactoCorreosElectronico.Update(correo);
+                       _agendaContext.ContactoCorreosElectronico.Update(contactoCorreo);
 
                    });
                 }
 
                 if (contacto.Telefonos != null)
                 {
-                    contacto.Telefonos.ForEach(telefono =>
+                    contacto.Telefonos.ForEach(async telefono =>
                     {
-                        if (!_agendaContext.ContactoTelefonos.Any(t => t.Id == telefono.Id))
-                            throw new UnvalidArgumentException("Algunos de los telefono no existen");
+                        ContactoTelefono contactoTelefono = await _agendaContext.ContactoTelefonos.
+                       Where(c => c.Id == telefono.Id).FirstOrDefaultAsync();
 
+                        if (contactoTelefono == null)
+                            throw new UnvalidArgumentException("Algunos de los correos no existen");
 
-                        telefono.Contacto = obj_contacto;
-                        _agendaContext.ContactoTelefonos.Update(telefono);
+                        contactoTelefono.NumeroTelefono = telefono.Telefono;
+
+                        _agendaContext.ContactoTelefonos.Update(contactoTelefono);
 
                     });
                 }
@@ -172,10 +189,10 @@ namespace Negocio
                                                         Apellido = c.Apellido,
                                                         Cedula = c.Cedula,
                                                         Direccion = c.Direccion,
-                                                        Telefonos = (_agendaContext.ContactoTelefonos.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoTelefono
-                                                        { NumeroTelefono = ct.NumeroTelefono })).ToList(),
-                                                        CorreoElectronicos = (_agendaContext.ContactoCorreosElectronico.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoCorreoElectronico
-                                                        { Correo = ct.Correo })).ToList()
+                                                        Telefonos = (_agendaContext.ContactoTelefonos.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoTelefonoDTO
+                                                        { Telefono = ct.NumeroTelefono })).ToList(),
+                                                        CorreoElectronicos = (_agendaContext.ContactoCorreosElectronico.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoCorreoElectronicoDTO
+                                                        { CorreoElectronico = ct.Correo })).ToList()
 
                                                     }).ToListAsync();
 
@@ -200,15 +217,15 @@ namespace Negocio
                                                       Apellido = c.Apellido,
                                                       Cedula = c.Cedula,
                                                       Direccion = c.Direccion,
-                                                      Telefonos = (_agendaContext.ContactoTelefonos.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoTelefono
+                                                      Telefonos = (_agendaContext.ContactoTelefonos.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoTelefonoDTO
                                                       {
                                                           Id = ct.Id,
-                                                          NumeroTelefono = ct.NumeroTelefono
+                                                          Telefono = ct.NumeroTelefono
                                                       })).ToList(),
-                                                      CorreoElectronicos = (_agendaContext.ContactoCorreosElectronico.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoCorreoElectronico
+                                                      CorreoElectronicos = (_agendaContext.ContactoCorreosElectronico.Where(x => x.Id_Contacto == c.Id).Select(ct => new ContactoCorreoElectronicoDTO
                                                       {
                                                           Id = ct.Id,
-                                                          Correo = ct.Correo
+                                                          CorreoElectronico = ct.Correo
                                                       })).ToList()
 
                                                   }).Where(c => c.Id == id).FirstOrDefaultAsync();

@@ -11,8 +11,8 @@ namespace DTOs
         public string Nombre { get; set; }
         public string Apellido { get; set; }
         public string Direccion { get; set; }
-        public List<ContactoTelefono> Telefonos { get; set; }
-        public List<ContactoCorreoElectronico> CorreoElectronicos { get; set; }
+        public List<ContactoTelefonoDTO> Telefonos { get; set; }
+        public List<ContactoCorreoElectronicoDTO> CorreoElectronicos { get; set; }
 
 
     }
